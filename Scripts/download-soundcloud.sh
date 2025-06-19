@@ -12,8 +12,8 @@ NC='\033[0m' # No Color
 
 show_help() {
     cat <<-EOF
-${BLUE}🎵 SoundCloud Downloader${NC}
-${BLUE}=========================${NC}
+${BLUE}SoundCloud Downloader${NC}
+${BLUE}=====================${NC}
 
 ${GREEN}Download music from SoundCloud in highest quality${NC}
 
@@ -68,8 +68,8 @@ ${CYAN}ADVANCED OPTIONS:${NC}
   soundcloud -d ~/Desktop -q good --no-thumb https://soundcloud.com/artist/song
 
 ${CYAN}YOUR MUSIC:${NC}
-  ${GREEN}📁 Default location: ~/Music/Soundcloud${NC}
-  ${GREEN}📂 Organized as: Artist/Album/Song.m4a${NC}
+  ${GREEN}Default location: ~/Music/Soundcloud${NC}
+  ${GREEN}Organized as: Artist/Album/Song.m4a${NC}
 
 ${CYAN}TROUBLESHOOTING:${NC}
   ${RED}•${NC} ${YELLOW}Make sure the SoundCloud link is public${NC}
@@ -78,6 +78,20 @@ ${CYAN}TROUBLESHOOTING:${NC}
   ${RED}•${NC} ${YELLOW}Use ${GREEN}-v${NC} flag for detailed error information${NC}
   ${RED}•${NC} ${YELLOW}Try ${GREEN}--dry-run${NC} first to see what's available${NC}
 
+${CYAN}UNINSTALL:${NC}
+  ${YELLOW}# Remove the soundcloud command${NC}
+  rm ~/Scripts/download-soundcloud.sh
+
+  ${YELLOW}# Remove the alias from your shell profile${NC}
+  sed -i.bak '/alias soundcloud=/d' ~/.zshrc
+  sed -i.bak '/# SoundCloud Downloader/d' ~/.zshrc
+
+  ${YELLOW}# Remove downloaded music (optional)${NC}
+  rm -rf ~/Music/Soundcloud
+
+  ${YELLOW}# Reload your shell${NC}
+  source ~/.zshrc
+
 ${CYAN}EXAMPLES FOR YOUR FRIEND:${NC}
   ${GREEN}soundcloud help${NC}                              ${BLUE}# Show this help${NC}
   ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}  ${BLUE}# Download one song${NC}
@@ -85,15 +99,13 @@ ${CYAN}EXAMPLES FOR YOUR FRIEND:${NC}
   ${GREEN}soundcloud -d ~/Desktop <link>${NC}              ${BLUE}# Save to Desktop${NC}
   ${GREEN}soundcloud --dry-run <link>${NC}                 ${BLUE}# Preview first${NC}
 
-${PURPLE}Happy downloading! 🎵${NC}
-
 EOF
 }
 
 # Check if yt-dlp is installed
 if ! command -v yt-dlp &> /dev/null; then
-    echo -e "${RED}❌ yt-dlp is not installed${NC}"
-    echo -e "${BLUE}💡 Run the installer again: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
+    echo -e "${RED}ERROR: yt-dlp is not installed${NC}"
+    echo -e "${BLUE}INFO: Run the installer again: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
     exit 1
 fi
 
@@ -107,7 +119,7 @@ VERBOSE=""
 
 # No arguments
 if [[ $# -eq 0 ]]; then
-    echo -e "${BLUE}🎵 SoundCloud Downloader${NC}"
+    echo -e "${BLUE}SoundCloud Downloader${NC}"
     echo -e "${YELLOW}Usage: ${GREEN}soundcloud <SoundCloud-link>${NC}"
     echo ""
     echo -e "${CYAN}Examples:${NC}"
@@ -133,8 +145,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         -d|--dest)
             if [[ -z "$2" ]]; then
-                echo -e "${RED}❌ --dest needs a folder path${NC}"
-                echo -e "${BLUE}💡 Example: ${GREEN}soundcloud -d ~/Desktop <link>${NC}"
+                echo -e "${RED}ERROR: --dest needs a folder path${NC}"
+                echo -e "${BLUE}INFO: Example: ${GREEN}soundcloud -d ~/Desktop <link>${NC}"
                 exit 1
             fi
             DEST="$2"
@@ -142,8 +154,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         -q|--quality)
             if [[ -z "$2" ]]; then
-                echo -e "${RED}❌ --quality needs a level${NC}"
-                echo -e "${BLUE}💡 Options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
+                echo -e "${RED}ERROR: --quality needs a level${NC}"
+                echo -e "${BLUE}INFO: Options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
                 exit 1
             fi
             case "$2" in
@@ -157,8 +169,8 @@ while [[ $# -gt 0 ]]; do
                     FORMAT='bestaudio[ext=mp3]/bestaudio[abr<=128]/bestaudio'
                     ;;
                 *)
-                    echo -e "${RED}❌ Invalid quality: $2${NC}"
-                    echo -e "${BLUE}💡 Valid options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
+                    echo -e "${RED}ERROR: Invalid quality: $2${NC}"
+                    echo -e "${BLUE}INFO: Valid options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
                     exit 1
                     ;;
             esac
@@ -181,8 +193,8 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -*)
-            echo -e "${RED}❌ Unknown option: $1${NC}"
-            echo -e "${BLUE}💡 Type ${GREEN}'soundcloud help'${NC} for available options"
+            echo -e "${RED}ERROR: Unknown option: $1${NC}"
+            echo -e "${BLUE}INFO: Type ${GREEN}'soundcloud help'${NC} for available options"
             exit 1
             ;;
         *)
@@ -195,17 +207,17 @@ done
 
 # Check for URL
 if [[ -z "$URL" ]]; then
-    echo -e "${RED}❌ No SoundCloud link provided${NC}"
-    echo -e "${BLUE}💡 Usage: ${GREEN}soundcloud <SoundCloud-link>${NC}"
-    echo -e "${BLUE}💡 Example: ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
+    echo -e "${RED}ERROR: No SoundCloud link provided${NC}"
+    echo -e "${BLUE}INFO: Usage: ${GREEN}soundcloud <SoundCloud-link>${NC}"
+    echo -e "${BLUE}INFO: Example: ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
     exit 1
 fi
 
 # Validate it's a SoundCloud URL
 if [[ ! "$URL" =~ soundcloud\.com ]]; then
-    echo -e "${RED}❌ That doesn't look like a SoundCloud link${NC}"
-    echo -e "${BLUE}💡 Make sure it looks like: ${GREEN}https://soundcloud.com/artist/track${NC}"
-    echo -e "${BLUE}💡 Links should start with: ${GREEN}https://soundcloud.com/${NC}"
+    echo -e "${RED}ERROR: That doesn't look like a SoundCloud link${NC}"
+    echo -e "${BLUE}INFO: Make sure it looks like: ${GREEN}https://soundcloud.com/artist/track${NC}"
+    echo -e "${BLUE}INFO: Links should start with: ${GREEN}https://soundcloud.com/${NC}"
     exit 1
 fi
 
@@ -214,21 +226,21 @@ DEST="${DEST/#\~/$HOME}"
 
 # Create destination folder
 if ! mkdir -p "$DEST"; then
-    echo -e "${RED}❌ Can't create folder: $DEST${NC}"
-    echo -e "${BLUE}💡 Check folder permissions or try a different location${NC}"
+    echo -e "${RED}ERROR: Can't create folder: $DEST${NC}"
+    echo -e "${BLUE}INFO: Check folder permissions or try a different location${NC}"
     exit 1
 fi
 
-echo -e "${BLUE}🎵 SoundCloud Downloader${NC}"
-echo -e "${BLUE}=========================${NC}"
-echo -e "${CYAN}📍 Source: ${GREEN}$URL${NC}"
-echo -e "${CYAN}💾 Destination: ${GREEN}$DEST${NC}"
+echo -e "${BLUE}SoundCloud Downloader${NC}"
+echo -e "${BLUE}=====================${NC}"
+echo -e "${CYAN}Source: ${GREEN}$URL${NC}"
+echo -e "${CYAN}Destination: ${GREEN}$DEST${NC}"
 
 # Show what we're about to do
 if [[ -n "$DRY_RUN" ]]; then
-    echo -e "${YELLOW}🔍 Preview mode - no files will be downloaded${NC}"
+    echo -e "${YELLOW}Preview mode - no files will be downloaded${NC}"
 else
-    echo -e "${GREEN}⬇️  Starting download...${NC}"
+    echo -e "${GREEN}Starting download...${NC}"
 fi
 
 # Build command - auto-detect playlist vs single with --yes-playlist
@@ -246,7 +258,7 @@ cmd+=("$URL")
 
 # Show command in verbose mode
 if [[ -n "$VERBOSE" ]]; then
-    echo -e "${BLUE}💡 Running command: ${CYAN}${cmd[*]}${NC}"
+    echo -e "${BLUE}INFO: Running command: ${CYAN}${cmd[*]}${NC}"
     echo ""
 fi
 
@@ -254,19 +266,19 @@ fi
 if "${cmd[@]}"; then
     if [[ -n "$DRY_RUN" ]]; then
         echo ""
-        echo -e "${GREEN}✅ Preview complete!${NC}"
-        echo -e "${BLUE}💡 Run without ${GREEN}--dry-run${NC} to actually download${NC}"
+        echo -e "${GREEN}SUCCESS: Preview complete!${NC}"
+        echo -e "${BLUE}INFO: Run without ${GREEN}--dry-run${NC} to actually download${NC}"
     else
         echo ""
-        echo -e "${GREEN}✅ Download complete!${NC}"
-        echo -e "${CYAN}📂 Your music is in: ${GREEN}$DEST${NC}"
-        echo -e "${BLUE}💡 Run the same command again to get any new tracks${NC}"
+        echo -e "${GREEN}SUCCESS: Download complete!${NC}"
+        echo -e "${CYAN}Your music is in: ${GREEN}$DEST${NC}"
+        echo -e "${BLUE}INFO: Run the same command again to get any new tracks${NC}"
     fi
 else
     echo ""
-    echo -e "${RED}❌ Download failed${NC}"
+    echo -e "${RED}ERROR: Download failed${NC}"
     echo ""
-    echo -e "${YELLOW}🔧 Troubleshooting tips:${NC}"
+    echo -e "${YELLOW}Troubleshooting tips:${NC}"
     echo -e "${BLUE}• Make sure the SoundCloud link is public${NC}"
     echo -e "${BLUE}• Check your internet connection${NC}"
     echo -e "${BLUE}• Some tracks may not be downloadable${NC}"

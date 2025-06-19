@@ -14,25 +14,25 @@ NC='\033[0m' # No Color
 
 # Print functions
 print_header() {
-    echo -e "${BLUE}🎵 SoundCloud Downloader Installer${NC}"
-    echo -e "${BLUE}====================================${NC}"
+    echo -e "${BLUE}SoundCloud Downloader Installer${NC}"
+    echo -e "${BLUE}===============================${NC}"
     echo ""
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}SUCCESS: $1${NC}"
 }
 
 print_info() {
-    echo -e "${BLUE}💡 $1${NC}"
+    echo -e "${BLUE}INFO: $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}WARNING: $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}ERROR: $1${NC}"
 }
 
 print_step() {
@@ -94,7 +94,7 @@ print_success "Running on macOS ($ARCH)"
 print_info "Will use Homebrew path: $BREW_PATH"
 
 # 1. Handle shell setup
-print_step "🔧 Setting up shell..."
+print_step "Setting up shell..."
 CURRENT_SHELL=$(basename "$SHELL")
 print_info "Current shell: $CURRENT_SHELL"
 
@@ -115,7 +115,7 @@ fi
 print_success "Will use $SHELL_NAME profile: $SHELL_PROFILE"
 
 # 2. Install/Setup Homebrew
-print_step "🍺 Setting up Homebrew..."
+print_step "Setting up Homebrew..."
 
 # First, try to setup existing Homebrew
 if setup_brew_env && command_exists brew; then
@@ -140,7 +140,7 @@ else
             exit 1
         fi
 
-                # Add to shell profile
+        # Add to shell profile
         BREW_ENV_LINE="eval \"\$(${BREW_PATH}/bin/brew shellenv)\""
 
         touch "$SHELL_PROFILE"
@@ -165,7 +165,7 @@ if ! command_exists brew; then
 fi
 
 # 3. Install yt-dlp
-print_step "⬇️  Installing yt-dlp (the download engine)..."
+print_step "Installing yt-dlp (the download engine)..."
 if command_exists yt-dlp; then
     print_success "yt-dlp is already installed"
     print_info "Updating to latest version..."
@@ -191,7 +191,7 @@ SCRIPT_NAME="download-soundcloud.sh"
 SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
 REPO_URL="https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main"
 
-print_step "📁 Setting up SoundCloud downloader script..."
+print_step "Setting up SoundCloud downloader script..."
 mkdir -p "$SCRIPT_DIR"
 print_success "Created Scripts directory: $SCRIPT_DIR"
 
@@ -207,7 +207,7 @@ else
 fi
 
 # 5. Set up the alias
-print_step "⚙️  Setting up 'soundcloud' command..."
+print_step "Setting up 'soundcloud' command..."
 ALIAS_LINE="alias soundcloud=\"$SCRIPT_PATH\""
 
 # Create shell profile if it doesn't exist
@@ -235,7 +235,7 @@ mkdir -p "$MUSIC_DIR"
 print_success "Created music directory: $MUSIC_DIR"
 
 # 7. Test the installation
-print_step "🧪 Testing installation..."
+print_step "Testing installation..."
 source "$SHELL_PROFILE" 2>/dev/null || true
 
 if command_exists yt-dlp && [[ -x "$SCRIPT_PATH" ]]; then
@@ -254,25 +254,24 @@ fi
 
 # Final success message
 echo ""
-echo -e "${GREEN}🎉 Installation Complete!${NC}"
-echo -e "${GREEN}========================${NC}"
+echo -e "${GREEN}Installation Complete!${NC}"
+echo -e "${GREEN}======================${NC}"
 echo ""
-echo -e "${BLUE}📖 Quick Start Guide:${NC}"
+echo -e "${BLUE}Quick Start Guide:${NC}"
 echo -e "${YELLOW}1.${NC} Close this Terminal window and open a new one"
 echo -e "${YELLOW}2.${NC} Type: ${GREEN}soundcloud help${NC}"
 echo -e "${YELLOW}3.${NC} Try downloading: ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
 echo ""
-echo -e "${BLUE}📁 Your music will be saved to:${NC}"
+echo -e "${BLUE}Your music will be saved to:${NC}"
 echo -e "   ${GREEN}$MUSIC_DIR${NC}"
 echo ""
-echo -e "${BLUE}💡 Example commands:${NC}"
+echo -e "${BLUE}Example commands:${NC}"
 echo -e "   ${GREEN}soundcloud help${NC}                              ${BLUE}# Show detailed help${NC}"
 echo -e "   ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}  ${BLUE}# Download a song${NC}"
 echo -e "   ${GREEN}soundcloud https://soundcloud.com/user/sets/mix${NC} ${BLUE}# Download a playlist${NC}"
 echo ""
-echo -e "${BLUE}🔧 Need help?${NC}"
+echo -e "${BLUE}Need help?${NC}"
 echo -e "   • Make sure SoundCloud links are public"
 echo -e "   • Use ${GREEN}soundcloud -v <link>${NC} for detailed output"
 echo -e "   • Run ${GREEN}soundcloud --dry-run <link>${NC} to preview downloads"
 echo ""
-echo -e "${PURPLE}Happy downloading! 🎵${NC}"
