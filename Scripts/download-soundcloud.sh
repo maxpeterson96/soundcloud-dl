@@ -106,14 +106,17 @@ EOF
 }
 
 # Check if yt-dlp is installed
-if ! command -v yt-dlp &> /dev/null; then
-    echo -e "${RED}ERROR: yt-dlp is not installed${NC}"
-    echo -e "${BLUE}INFO: This usually means you need to restart Terminal${NC}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+YTDLP_PATH="$SCRIPT_DIR/yt-dlp"
+
+if [[ ! -x "$YTDLP_PATH" ]]; then
+    echo -e "${RED}ERROR: yt-dlp binary not found${NC}"
+    echo -e "${BLUE}INFO: Expected location: $YTDLP_PATH${NC}"
     echo ""
     echo -e "${YELLOW}Quick fixes:${NC}"
-    echo -e "${BLUE}1. Close Terminal and open a new window${NC}"
-    echo -e "${BLUE}2. Or run: ${GREEN}eval \"\$(brew --prefix)/bin/brew shellenv\"${NC}"
-    echo -e "${BLUE}3. Or reinstall: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
+    echo -e "${BLUE}1. Reinstall: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
+    echo -e "${BLUE}2. Or download manually from: ${GREEN}https://github.com/yt-dlp/yt-dlp/releases/latest${NC}"
+    echo -e "${BLUE}3. Make sure the binary is executable: ${GREEN}chmod +x $YTDLP_PATH${NC}"
     exit 1
 fi
 
@@ -252,7 +255,7 @@ else
 fi
 
 # Build command - auto-detect playlist vs single with --yes-playlist
-cmd=(yt-dlp)
+cmd=("$YTDLP_PATH")
 cmd+=(--yes-playlist)  # Auto-detects and handles both single tracks and playlists
 [[ -n "$DRY_RUN" ]] && cmd+=("$DRY_RUN")
 cmd+=(-f "$FORMAT")

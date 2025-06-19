@@ -54,28 +54,6 @@ detect_arch() {
     fi
 }
 
-# Function to get the correct Homebrew path
-get_brew_path() {
-    local arch=$(detect_arch)
-    if [[ "$arch" == "arm64" ]]; then
-        echo "/opt/homebrew"
-    else
-        echo "/usr/local"
-    fi
-}
-
-# Function to setup Homebrew environment
-setup_brew_env() {
-    local brew_path=$(get_brew_path)
-    local brew_bin="$brew_path/bin/brew"
-
-    if [[ -f "$brew_bin" ]]; then
-        eval "$($brew_bin shellenv)"
-        return 0
-    fi
-    return 1
-}
-
 # Function to get shell profiles for current user
 get_shell_profiles() {
     local profiles=()
@@ -214,10 +192,15 @@ uninstall_soundcloud() {
     echo -e "${YELLOW}Uninstalling SoundCloud Downloader...${NC}"
     echo ""
 
-    # Remove script
+    # Remove script and yt-dlp binary
     if [[ -f "$HOME/Scripts/download-soundcloud.sh" ]]; then
         rm -f "$HOME/Scripts/download-soundcloud.sh"
         print_success "Removed download script"
+    fi
+
+    if [[ -f "$HOME/Scripts/yt-dlp" ]]; then
+        rm -f "$HOME/Scripts/yt-dlp"
+        print_success "Removed yt-dlp binary"
     fi
 
     # Remove Scripts directory if empty
@@ -265,10 +248,7 @@ fi
 
 # Detect Mac type
 ARCH=$(detect_arch)
-BREW_PATH=$(get_brew_path)
-
 print_success "Running on macOS ($ARCH)"
-print_info "Will use Homebrew path: $BREW_PATH"
 
 # 1. Handle shell setup
 print_step "Setting up shell configuration..."
@@ -292,84 +272,51 @@ else
     print_warning "No shell profiles detected, will create default"
 fi
 
-# 2. Install/Setup Homebrew
-print_step "Setting up Homebrew..."
-
-# First, try to setup existing Homebrew
-if setup_brew_env && command_exists brew; then
-    print_success "Homebrew is already installed and configured"
-    BREW_VERSION=$(brew --version | head -1)
-    print_info "$BREW_VERSION"
-else
-    print_info "Installing Homebrew (this may take several minutes)..."
-    print_warning "You may be asked for your password"
-    print_info "The installation may appear to hang - this is normal!"
-
-    # Install Homebrew
-    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
-        print_success "Homebrew installed successfully"
-
-        # Setup environment
-        if setup_brew_env; then
-            print_success "Homebrew environment configured"
-        else
-            print_error "Could not configure Homebrew environment"
-            print_info "Please run: eval \"\$(${BREW_PATH}/bin/brew shellenv)\""
-            exit 1
-        fi
-
-        # Add to all shell profiles
-        BREW_ENV_LINE="eval \"\$(${BREW_PATH}/bin/brew shellenv)\""
-        for profile in "${SHELL_PROFILES[@]}"; do
-            if add_to_profile "$profile" "$BREW_ENV_LINE" "Homebrew"; then
-                print_success "Added Homebrew to $(basename "$profile")"
-            fi
-        done
-    else
-        print_error "Homebrew installation failed"
-        print_info "Please visit https://brew.sh for manual installation"
-        exit 1
-    fi
-fi
-
-# Verify Homebrew is working
-if ! command_exists brew; then
-    print_error "Homebrew is not working properly"
-    print_info "Try closing and reopening Terminal, then run this installer again"
-    exit 1
-fi
-
-# 3. Install yt-dlp
-print_step "Installing yt-dlp (the download engine)..."
-if command_exists yt-dlp; then
-    print_success "yt-dlp is already installed"
-    print_info "Updating to latest version..."
-    if brew upgrade yt-dlp 2>/dev/null; then
-        print_success "yt-dlp updated"
-    else
-        print_info "Already up to date"
-    fi
-else
-    print_info "Installing yt-dlp..."
-    if brew install yt-dlp; then
-        print_success "yt-dlp installed successfully"
-    else
-        print_error "Failed to install yt-dlp"
-        print_info "Try running: brew install yt-dlp"
-        exit 1
-    fi
-fi
-
-# 4. Create Scripts directory and download the script
+# 2. Create Scripts directory
 SCRIPT_DIR="$HOME/Scripts"
 SCRIPT_NAME="download-soundcloud.sh"
 SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
+YTDLP_PATH="$SCRIPT_DIR/yt-dlp"
 REPO_URL="https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main"
 
-print_step "Setting up SoundCloud downloader script..."
+print_step "Setting up SoundCloud downloader..."
 mkdir -p "$SCRIPT_DIR"
 print_success "Created Scripts directory: $SCRIPT_DIR"
 
+# 3. Download yt-dlp binary
+print_step "Installing yt-dlp (the download engine)..."
+
+# Determine the correct yt-dlp binary URL for the architecture
+if [[ "$ARCH" == "arm64" ]]; then
+    YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+else
+    YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+fi
+
+print_info "Downloading yt-dlp binary for $ARCH..."
+if curl -fsSL "$YTDLP_URL" -o "$YTDLP_PATH"; then
+    chmod +x "$YTDLP_PATH"
+    print_success "yt-dlp binary downloaded and made executable"
+
+    # Test the binary
+    if "$YTDLP_PATH" --version >/dev/null 2>&1; then
+        YTDLP_VERSION=$("$YTDLP_PATH" --version)
+        print_success "yt-dlp is working (version: $YTDLP_VERSION)"
+    else
+        print_error "yt-dlp binary is not working properly"
+        print_info "This might be due to macOS security restrictions"
+        print_info "You may need to allow the binary in System Preferences > Security & Privacy"
+        exit 1
+    fi
+else
+    print_error "Failed to download yt-dlp binary"
+    print_info "Check your internet connection and try again"
+    print_info "Or manually download from: $YTDLP_URL"
+    exit 1
+fi
+
+# 4. Download the script
+print_step "Setting up SoundCloud downloader script..."
 print_info "Downloading latest script..."
 if curl -fsSL "$REPO_URL/Scripts/$SCRIPT_NAME" -o "$SCRIPT_PATH"; then
     chmod +x "$SCRIPT_PATH"
@@ -459,7 +406,7 @@ print_success "Created music directory: $MUSIC_DIR"
 # 7. Test the installation
 print_step "Testing installation..."
 
-if command_exists yt-dlp && [[ -x "$SCRIPT_PATH" ]]; then
+if [[ -x "$YTDLP_PATH" ]] && [[ -x "$SCRIPT_PATH" ]]; then
     print_success "All components installed successfully!"
 
     # Test if alias works by checking if it can be found in a profile
@@ -522,9 +469,9 @@ echo -e "   • Make sure SoundCloud links are public"
 echo -e "   • Use ${GREEN}soundcloud -v <link>${NC} for detailed output"
 echo -e "   • Run ${GREEN}soundcloud --dry-run <link>${NC} to preview downloads"
 echo ""
-echo -e "${BLUE}Common Issues:${NC}"
-echo -e "   • ${YELLOW}\"command not found: soundcloud\"${NC} = You need to restart Terminal"
-echo -e "   • ${YELLOW}\"yt-dlp is not installed\"${NC} = Restart Terminal or run:"
-echo -e "     ${GREEN}eval \"\$(${BREW_PATH}/bin/brew shellenv)\"${NC}"
-echo -e "   • ${YELLOW}Permission denied${NC} = Run: ${GREEN}sudo chown \$USER ~/.zshrc${NC}"
+echo -e "${BLUE}Benefits of this new installer:${NC}"
+echo -e "   • ${GREEN}No Homebrew required${NC} - self-contained installation"
+echo -e "   • ${GREEN}Faster setup${NC} - downloads only what's needed"
+echo -e "   • ${GREEN}No system dependencies${NC} - everything in ~/Scripts"
+echo -e "   • ${GREEN}Easy to uninstall${NC} - just remove ~/Scripts folder"
 echo ""
