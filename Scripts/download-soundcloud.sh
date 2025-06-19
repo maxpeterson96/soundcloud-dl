@@ -108,7 +108,12 @@ EOF
 # Check if yt-dlp is installed
 if ! command -v yt-dlp &> /dev/null; then
     echo -e "${RED}ERROR: yt-dlp is not installed${NC}"
-    echo -e "${BLUE}INFO: Run the installer again: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
+    echo -e "${BLUE}INFO: This usually means you need to restart Terminal${NC}"
+    echo ""
+    echo -e "${YELLOW}Quick fixes:${NC}"
+    echo -e "${BLUE}1. Close Terminal and open a new window${NC}"
+    echo -e "${BLUE}2. Or run: ${GREEN}eval \"\$(brew --prefix)/bin/brew shellenv\"${NC}"
+    echo -e "${BLUE}3. Or reinstall: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
     exit 1
 fi
 
