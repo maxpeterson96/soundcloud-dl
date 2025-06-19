@@ -1,8 +1,8 @@
-# 🎵 SoundCloud Downloader
+# SoundCloud Downloader
 
 Easy one-line installation tool for downloading music from SoundCloud in highest quality. Designed for non-technical users with automatic setup and uninstall.
 
-## 🚀 Quick Install (macOS only)
+## Quick Install (macOS only)
 
 Copy and paste this single line into Terminal:
 
@@ -11,14 +11,14 @@ bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/
 ```
 
 That's it! The installer will:
-- ✅ Automatically detect your shell (bash or zsh)
-- ✅ Install Homebrew (if needed)
-- ✅ Install the download engine (yt-dlp)
-- ✅ Create the `soundcloud` command
-- ✅ Set everything up for both bash and zsh
-- ✅ Work on both Intel and Apple Silicon Macs
+- Automatically detect your shell (bash or zsh)
+- Install Homebrew (if needed)
+- Install the download engine (yt-dlp)
+- Create the `soundcloud` command
+- Set everything up for both bash and zsh
+- Work on both Intel and Apple Silicon Macs
 
-## 📖 How to Use
+## How to Use
 
 After installation, **close Terminal and open it again**. Then:
 
@@ -52,14 +52,14 @@ soundcloud --dry-run https://soundcloud.com/artist/song
 soundcloud -v https://soundcloud.com/artist/song
 ```
 
-## 📁 Where Your Music Goes
+## Where Your Music Goes
 
 By default, music is saved to:
 ```
 ~/Music/Soundcloud/Artist/Album/Song.m4a
 ```
 
-## 🗑️ Easy Uninstall
+## Easy Uninstall
 
 To completely remove SoundCloud Downloader:
 
@@ -68,12 +68,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/
 ```
 
 This will:
-- ✅ Remove the download script
-- ✅ Clean both bash and zsh profiles
-- ✅ Ask about removing downloaded music
-- ✅ Leave no traces behind
+- Remove the download script
+- Clean both bash and zsh profiles
+- Ask about removing downloaded music
+- Leave no traces behind
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 If something doesn't work:
 
@@ -96,19 +96,19 @@ If something doesn't work:
    - Run the installer again (it's safe to run multiple times)
    - Make sure you're using the latest version
 
-## 🎯 Features
+## Features
 
-- ✅ **One-line install** - No technical knowledge needed
-- ✅ **Universal shell support** - Works with both bash and zsh
-- ✅ **Best quality** - Downloads in highest available quality
-- ✅ **Auto-detects** - Works with songs, playlists, and albums
-- ✅ **Smart organization** - Files organized by Artist/Album
-- ✅ **Resume downloads** - Won't re-download existing files
-- ✅ **Preview mode** - See what's available before downloading
-- ✅ **Easy uninstall** - One command removes everything
-- ✅ **Detailed help** - Clear examples and troubleshooting
+- **One-line install** - No technical knowledge needed
+- **Universal shell support** - Works with both bash and zsh
+- **Best quality** - Downloads in highest available quality
+- **Auto-detects** - Works with songs, playlists, and albums
+- **Smart organization** - Files organized by Artist/Album
+- **Resume downloads** - Won't re-download existing files
+- **Preview mode** - See what's available before downloading
+- **Easy uninstall** - One command removes everything
+- **Detailed help** - Clear examples and troubleshooting
 
-## 💡 Pro Tips
+## Pro Tips
 
 - **Always close and reopen Terminal after installation** - This is the most common fix
 - Use `soundcloud help` to see all available options
@@ -117,7 +117,7 @@ If something doesn't work:
 - The installer can be run multiple times safely if something breaks
 - Both Intel and Apple Silicon Macs are fully supported
 
-## 🤝 For Non-Technical Users
+## For Non-Technical Users
 
 This tool is designed to be as simple as possible:
 
@@ -130,4 +130,4 @@ No need to understand shells, package managers, or command line tools. Everythin
 
 ---
 
-Made with ❤️ for easy music downloading
+Made with love for easy music downloading

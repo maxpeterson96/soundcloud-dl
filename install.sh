@@ -14,30 +14,30 @@ NC='\033[0m' # No Color
 
 # Print functions
 print_header() {
-    echo -e "${BLUE}🎵 SoundCloud Downloader Installer${NC}"
-    echo -e "${BLUE}===================================${NC}"
+    echo -e "${BLUE}SoundCloud Downloader Installer${NC}"
+    echo -e "${BLUE}===============================${NC}"
     echo ""
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}SUCCESS: $1${NC}"
 }
 
 print_info() {
-    echo -e "${BLUE}💡 $1${NC}"
+    echo -e "${BLUE}INFO: $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}WARNING: $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}ERROR: $1${NC}"
 }
 
 print_step() {
     echo ""
-    echo -e "${PURPLE}🔧 $1${NC}"
+    echo -e "${PURPLE}$1${NC}"
 }
 
 # Function to check if command exists
@@ -80,26 +80,43 @@ setup_brew_env() {
 get_shell_profiles() {
     local profiles=()
 
-    # Check for zsh
-    if [[ -f "$HOME/.zshrc" ]] || [[ "$SHELL" == *"zsh"* ]]; then
+    # Always try to use the profile for the current shell first
+    if [[ "$SHELL" == *"zsh"* ]]; then
         profiles+=("$HOME/.zshrc")
-    fi
-
-    # Check for bash
-    if [[ -f "$HOME/.bash_profile" ]] || [[ "$SHELL" == *"bash"* ]]; then
+    elif [[ "$SHELL" == *"bash"* ]]; then
         profiles+=("$HOME/.bash_profile")
     fi
 
-    # If no profiles found, create based on current shell
-    if [[ ${#profiles[@]} -eq 0 ]]; then
-        if [[ "$SHELL" == *"zsh"* ]]; then
-            profiles+=("$HOME/.zshrc")
-        else
-            profiles+=("$HOME/.bash_profile")
-        fi
+    # Also add the other common profile as backup
+    if [[ "$SHELL" == *"zsh"* ]]; then
+        profiles+=("$HOME/.bash_profile")
+    else
+        profiles+=("$HOME/.zshrc")
     fi
 
     printf '%s\n' "${profiles[@]}"
+}
+
+# Function to check if we can write to a file
+can_write_to_file() {
+    local file="$1"
+
+    # If file doesn't exist, check if we can create it
+    if [[ ! -f "$file" ]]; then
+        if touch "$file" 2>/dev/null; then
+            rm -f "$file"
+            return 0
+        else
+            return 1
+        fi
+    fi
+
+    # If file exists, check if we can write to it
+    if [[ -w "$file" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to add line to shell profile if not present
@@ -108,25 +125,31 @@ add_to_profile() {
     local line="$2"
     local comment="$3"
 
-    # Create profile if it doesn't exist, handle permission issues
-    if ! touch "$profile" 2>/dev/null; then
-        print_warning "Cannot write to $profile (permission issue)"
-        print_info "You may need to run: sudo chown $USER $profile"
+    # Check if we can write to this profile
+    if ! can_write_to_file "$profile"; then
+        print_warning "Cannot write to $profile (permission denied)"
+        if [[ -f "$profile" ]]; then
+            local owner=$(ls -l "$profile" | awk '{print $3}')
+            if [[ "$owner" == "root" ]]; then
+                print_info "File is owned by root. Suggesting manual fix..."
+                echo -e "${YELLOW}Please run: ${GREEN}sudo chown $USER $profile${NC}"
+                echo -e "${YELLOW}Then run the installer again${NC}"
+                return 2
+            fi
+        fi
         return 1
     fi
 
+    # Create profile if it doesn't exist
+    touch "$profile" 2>/dev/null || return 1
+
     # Check if line already exists
     if ! grep -Fq "$line" "$profile" 2>/dev/null; then
-        if {
-            echo "" >> "$profile"
-            [[ -n "$comment" ]] && echo "# $comment" >> "$profile"
-            echo "$line" >> "$profile"
-        } 2>/dev/null; then
-            return 0
-        else
-            print_warning "Cannot write to $profile (permission denied)"
-            return 1
-        fi
+        {
+            echo ""
+            [[ -n "$comment" ]] && echo "# $comment"
+            echo "$line"
+        } >> "$profile" 2>/dev/null && return 0
     fi
     return 1
 }
@@ -136,7 +159,7 @@ remove_from_profile() {
     local profile="$1"
     local pattern="$2"
 
-    if [[ -f "$profile" ]]; then
+    if [[ -f "$profile" ]] && can_write_to_file "$profile"; then
         # Create backup
         cp "$profile" "${profile}.backup-$(date +%s)" 2>/dev/null || true
         # Remove lines matching pattern
@@ -148,7 +171,7 @@ remove_from_profile() {
 # Uninstall function
 uninstall_soundcloud() {
     print_header
-    echo -e "${YELLOW}🗑️  Uninstalling SoundCloud Downloader...${NC}"
+    echo -e "${YELLOW}Uninstalling SoundCloud Downloader...${NC}"
     echo ""
 
     # Remove script
@@ -322,18 +345,49 @@ fi
 print_step "Setting up 'soundcloud' command..."
 ALIAS_LINE="alias soundcloud=\"$SCRIPT_PATH\""
 
+# Track if we successfully added to any profile
+successful_profiles=()
+failed_profiles=()
+permission_issues=false
+
 for profile in "${SHELL_PROFILES[@]}"; do
     # Remove old aliases first
     remove_from_profile "$profile" "alias soundcloud="
     remove_from_profile "$profile" "# SoundCloud Downloader"
 
     # Add new alias
-    if add_to_profile "$profile" "$ALIAS_LINE" "SoundCloud Downloader"; then
-        print_success "Added 'soundcloud' command to $(basename "$profile")"
-    else
-        print_info "Updated 'soundcloud' command in $(basename "$profile")"
-    fi
+    result=$(add_to_profile "$profile" "$ALIAS_LINE" "SoundCloud Downloader")
+    case $? in
+        0)
+            print_success "Added 'soundcloud' command to $(basename "$profile")"
+            successful_profiles+=("$profile")
+            ;;
+        1)
+            print_info "Updated 'soundcloud' command in $(basename "$profile")"
+            successful_profiles+=("$profile")
+            ;;
+        2)
+            failed_profiles+=("$profile")
+            permission_issues=true
+            ;;
+    esac
 done
+
+# If we have permission issues, provide guidance
+if [[ "$permission_issues" == true ]]; then
+    echo ""
+    print_error "Some shell profiles have permission issues"
+    print_info "This is common when .zshrc is owned by root"
+    echo ""
+    print_info "To fix this, run these commands and then run the installer again:"
+    for profile in "${failed_profiles[@]}"; do
+        echo -e "  ${GREEN}sudo chown $USER $profile${NC}"
+    done
+    echo ""
+    print_info "Or you can manually add this line to your shell profile:"
+    echo -e "  ${GREEN}$ALIAS_LINE${NC}"
+    echo ""
+fi
 
 # 6. Create Music directory
 MUSIC_DIR="$HOME/Music/Soundcloud"
@@ -347,18 +401,10 @@ if command_exists yt-dlp && [[ -x "$SCRIPT_PATH" ]]; then
     print_success "All components installed successfully!"
 
     # Test if alias works by checking if it can be found in a profile
-    alias_found=false
-    for profile in "${SHELL_PROFILES[@]}"; do
-        if [[ -f "$profile" ]] && grep -q "alias soundcloud=" "$profile" 2>/dev/null; then
-            alias_found=true
-            break
-        fi
-    done
-
-    if [[ "$alias_found" == true ]]; then
+    if [[ ${#successful_profiles[@]} -gt 0 ]]; then
         print_success "Command 'soundcloud' is configured"
     else
-        print_warning "Command setup may need verification"
+        print_warning "Command setup needs manual configuration"
     fi
 else
     print_warning "Installation completed but some components need verification"
@@ -367,28 +413,36 @@ fi
 
 # Final success message
 echo ""
-echo -e "${GREEN}🎉 Installation Complete!${NC}"
-echo -e "${GREEN}=========================${NC}"
+echo -e "${GREEN}Installation Complete!${NC}"
+echo -e "${GREEN}======================${NC}"
 echo ""
-echo -e "${BLUE}📖 Quick Start Guide:${NC}"
+echo -e "${BLUE}Quick Start Guide:${NC}"
 echo -e "${YELLOW}1.${NC} ${RED}Close this Terminal window and open a new one${NC}"
 echo -e "${YELLOW}2.${NC} Type: ${GREEN}soundcloud help${NC}"
 echo -e "${YELLOW}3.${NC} Try downloading: ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
 echo ""
-echo -e "${BLUE}📁 Your music will be saved to:${NC}"
+echo -e "${BLUE}Your music will be saved to:${NC}"
 echo -e "   ${GREEN}$MUSIC_DIR${NC}"
 echo ""
-echo -e "${BLUE}💡 Example commands:${NC}"
+echo -e "${BLUE}Example commands:${NC}"
 echo -e "   ${GREEN}soundcloud help${NC}                              ${BLUE}# Show detailed help${NC}"
 echo -e "   ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}  ${BLUE}# Download a song${NC}"
 echo -e "   ${GREEN}soundcloud https://soundcloud.com/user/sets/mix${NC} ${BLUE}# Download a playlist${NC}"
 echo ""
-echo -e "${BLUE}🗑️  To uninstall later:${NC}"
+echo -e "${BLUE}To uninstall later:${NC}"
 echo -e "   ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh) uninstall${NC}"
 echo ""
-echo -e "${BLUE}🔧 Need help?${NC}"
+
+# Show additional help if there were permission issues
+if [[ "$permission_issues" == true ]]; then
+    echo -e "${YELLOW}NOTE: Some shell profiles need permission fixes${NC}"
+    echo -e "${YELLOW}After fixing permissions, you can run this installer again${NC}"
+    echo ""
+fi
+
+echo -e "${BLUE}Need help?${NC}"
 echo -e "   • Make sure SoundCloud links are public"
 echo -e "   • Use ${GREEN}soundcloud -v <link>${NC} for detailed output"
 echo -e "   • Run ${GREEN}soundcloud --dry-run <link>${NC} to preview downloads"
 echo ""
-echo -e "${GREEN}Happy downloading! 🎵${NC}"
+echo -e "${GREEN}Happy downloading!${NC}"
