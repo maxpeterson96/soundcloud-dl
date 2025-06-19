@@ -141,17 +141,27 @@ add_to_profile() {
     fi
 
     # Create profile if it doesn't exist
-    touch "$profile" 2>/dev/null || return 1
+    if ! touch "$profile" 2>/dev/null; then
+        print_warning "Cannot create or access $profile"
+        return 1
+    fi
 
     # Check if line already exists
     if ! grep -Fq "$line" "$profile" 2>/dev/null; then
-        {
+        # Try to append the alias
+        if {
             echo ""
             [[ -n "$comment" ]] && echo "# $comment"
             echo "$line"
-        } >> "$profile" 2>/dev/null && return 0
+        } >> "$profile" 2>/dev/null; then
+            return 0  # Success
+        else
+            print_warning "Failed to write alias to $profile"
+            return 1  # Failed to write
+        fi
+    else
+        return 1  # Already exists, no change needed
     fi
-    return 1
 }
 
 # Function to remove lines from shell profile
@@ -349,26 +359,43 @@ ALIAS_LINE="alias soundcloud=\"$SCRIPT_PATH\""
 successful_profiles=()
 failed_profiles=()
 permission_issues=false
+primary_shell_success=false
 
-for profile in "${SHELL_PROFILES[@]}"; do
+for i in "${!SHELL_PROFILES[@]}"; do
+    profile="${SHELL_PROFILES[$i]}"
+    is_primary_shell=false
+
+    # Check if this is the primary shell profile
+    if [[ $i -eq 0 ]]; then
+        is_primary_shell=true
+    fi
+
     # Remove old aliases first
     remove_from_profile "$profile" "alias soundcloud="
     remove_from_profile "$profile" "# SoundCloud Downloader"
 
     # Add new alias
-    result=$(add_to_profile "$profile" "$ALIAS_LINE" "SoundCloud Downloader")
-    case $? in
+    add_to_profile "$profile" "$ALIAS_LINE" "SoundCloud Downloader"
+    result=$?
+
+    case $result in
         0)
             print_success "Added 'soundcloud' command to $(basename "$profile")"
             successful_profiles+=("$profile")
+            if [[ "$is_primary_shell" == true ]]; then
+                primary_shell_success=true
+            fi
             ;;
         1)
-            print_info "Updated 'soundcloud' command in $(basename "$profile")"
-            successful_profiles+=("$profile")
+            print_warning "Could not add to $(basename "$profile") (already exists or write failed)"
             ;;
         2)
+            print_error "Permission denied for $(basename "$profile")"
             failed_profiles+=("$profile")
             permission_issues=true
+            if [[ "$is_primary_shell" == true ]]; then
+                print_error "CRITICAL: Cannot configure your primary shell profile!"
+            fi
             ;;
     esac
 done
@@ -376,7 +403,12 @@ done
 # If we have permission issues, provide guidance
 if [[ "$permission_issues" == true ]]; then
     echo ""
-    print_error "Some shell profiles have permission issues"
+    if [[ "$primary_shell_success" == false ]]; then
+        print_error "FAILED: Cannot configure your primary shell ($CURRENT_SHELL)"
+        print_error "The 'soundcloud' command will NOT work until this is fixed"
+    else
+        print_warning "Some secondary shell profiles have permission issues"
+    fi
     print_info "This is common when .zshrc is owned by root"
     echo ""
     print_info "To fix this, run these commands and then run the installer again:"
@@ -401,10 +433,13 @@ if command_exists yt-dlp && [[ -x "$SCRIPT_PATH" ]]; then
     print_success "All components installed successfully!"
 
     # Test if alias works by checking if it can be found in a profile
-    if [[ ${#successful_profiles[@]} -gt 0 ]]; then
-        print_success "Command 'soundcloud' is configured"
+    if [[ "$primary_shell_success" == true ]]; then
+        print_success "Command 'soundcloud' is configured for your primary shell"
+    elif [[ ${#successful_profiles[@]} -gt 0 ]]; then
+        print_warning "Command configured for some shells, but NOT your primary shell ($CURRENT_SHELL)"
+        print_warning "You may need to switch shells or fix permissions"
     else
-        print_warning "Command setup needs manual configuration"
+        print_error "Command setup FAILED - manual configuration required"
     fi
 else
     print_warning "Installation completed but some components need verification"
@@ -435,8 +470,13 @@ echo ""
 
 # Show additional help if there were permission issues
 if [[ "$permission_issues" == true ]]; then
-    echo -e "${YELLOW}NOTE: Some shell profiles need permission fixes${NC}"
-    echo -e "${YELLOW}After fixing permissions, you can run this installer again${NC}"
+    if [[ "$primary_shell_success" == false ]]; then
+        echo -e "${RED}IMPORTANT: The soundcloud command will NOT work until you fix the permission issue${NC}"
+        echo -e "${YELLOW}After fixing permissions, run this installer again${NC}"
+    else
+        echo -e "${YELLOW}NOTE: Some shell profiles need permission fixes${NC}"
+        echo -e "${YELLOW}After fixing permissions, you can run this installer again${NC}"
+    fi
     echo ""
 fi
 
@@ -445,4 +485,3 @@ echo -e "   • Make sure SoundCloud links are public"
 echo -e "   • Use ${GREEN}soundcloud -v <link>${NC} for detailed output"
 echo -e "   • Run ${GREEN}soundcloud --dry-run <link>${NC} to preview downloads"
 echo ""
-echo -e "${GREEN}Happy downloading!${NC}"
