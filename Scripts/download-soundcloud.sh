@@ -79,18 +79,21 @@ ${CYAN}TROUBLESHOOTING:${NC}
   ${RED}•${NC} ${YELLOW}Try ${GREEN}--dry-run${NC} first to see what's available${NC}
 
 ${CYAN}UNINSTALL:${NC}
-  ${YELLOW}# Remove the soundcloud command${NC}
+  ${YELLOW}# Easy uninstall command${NC}
+  bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh) uninstall
+
+  ${YELLOW}# Or manual removal:${NC}
+  ${YELLOW}# 1. Remove the script${NC}
   rm ~/Scripts/download-soundcloud.sh
 
-  ${YELLOW}# Remove the alias from your shell profile${NC}
-  sed -i.bak '/alias soundcloud=/d' ~/.zshrc
-  sed -i.bak '/# SoundCloud Downloader/d' ~/.zshrc
+  ${YELLOW}# 2. Remove aliases from both shell profiles${NC}
+  sed -i.bak '/alias soundcloud=/d' ~/.zshrc ~/.bash_profile 2>/dev/null || true
+  sed -i.bak '/# SoundCloud Downloader/d' ~/.zshrc ~/.bash_profile 2>/dev/null || true
 
-  ${YELLOW}# Remove downloaded music (optional)${NC}
+  ${YELLOW}# 3. Remove downloaded music (optional)${NC}
   rm -rf ~/Music/Soundcloud
 
-  ${YELLOW}# Reload your shell${NC}
-  source ~/.zshrc
+  ${YELLOW}# 4. Restart Terminal${NC}
 
 ${CYAN}EXAMPLES FOR YOUR FRIEND:${NC}
   ${GREEN}soundcloud help${NC}                              ${BLUE}# Show this help${NC}
