@@ -119,24 +119,54 @@ can_write_to_file() {
     fi
 }
 
+# Function to fix shell profile ownership if needed
+fix_profile_ownership() {
+    local profile="$1"
+
+    if [[ -f "$profile" ]]; then
+        local owner=$(ls -l "$profile" | awk '{print $3}')
+        if [[ "$owner" == "root" ]]; then
+            print_warning "$(basename "$profile") is owned by root - this is common on fresh macOS installs"
+            print_info "Attempting to fix ownership..."
+
+            # Try to fix ownership without prompting
+            if sudo -n chown "$USER" "$profile" 2>/dev/null; then
+                print_success "Fixed ownership of $(basename "$profile")"
+                return 0
+            else
+                print_error "Need to fix ownership of $(basename "$profile")"
+                echo -e "${YELLOW}Please run: ${GREEN}sudo chown \$USER $profile${NC}"
+                echo -e "${YELLOW}Then press Enter to continue, or Ctrl+C to exit and run installer again${NC}"
+                read -r
+
+                # Try again after user fixes it
+                if can_write_to_file "$profile"; then
+                    print_success "$(basename "$profile") is now writable"
+                    return 0
+                else
+                    print_error "Still cannot write to $(basename "$profile")"
+                    return 1
+                fi
+            fi
+        fi
+    fi
+    return 0
+}
+
 # Function to add line to shell profile if not present
 add_to_profile() {
     local profile="$1"
     local line="$2"
     local comment="$3"
 
+    # Fix ownership if needed
+    if ! fix_profile_ownership "$profile"; then
+        return 1
+    fi
+
     # Check if we can write to this profile
     if ! can_write_to_file "$profile"; then
         print_warning "Cannot write to $profile (permission denied)"
-        if [[ -f "$profile" ]]; then
-            local owner=$(ls -l "$profile" | awk '{print $3}')
-            if [[ "$owner" == "root" ]]; then
-                print_info "File is owned by root. Suggesting manual fix..."
-                echo -e "${YELLOW}Please run: ${GREEN}sudo chown $USER $profile${NC}"
-                echo -e "${YELLOW}Then run the installer again${NC}"
-                return 2
-            fi
-        fi
         return 1
     fi
 
@@ -476,6 +506,10 @@ if [[ "$permission_issues" == true ]]; then
     if [[ "$primary_shell_success" == false ]]; then
         echo -e "${RED}IMPORTANT: The soundcloud command will NOT work until you fix the permission issue${NC}"
         echo -e "${YELLOW}After fixing permissions, run this installer again${NC}"
+        echo ""
+        echo -e "${BLUE}Quick fix for this session:${NC}"
+        echo -e "   ${GREEN}source ~/.bash_profile${NC}     ${BLUE}# Load the alias temporarily${NC}"
+        echo ""
     else
         echo -e "${YELLOW}NOTE: Some shell profiles need permission fixes${NC}"
         echo -e "${YELLOW}After fixing permissions, you can run this installer again${NC}"
