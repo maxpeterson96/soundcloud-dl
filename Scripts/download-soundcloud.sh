@@ -1,52 +1,99 @@
 #!/usr/bin/env bash
 # SoundCloud Downloader - Simple music downloading tool
 
+# Colors for better output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
 show_help() {
     cat <<-EOF
-🎵 SoundCloud Downloader
+${BLUE}🎵 SoundCloud Downloader${NC}
+${BLUE}=========================${NC}
 
-Download music from SoundCloud in highest quality
+${GREEN}Download music from SoundCloud in highest quality${NC}
 
-BASIC USAGE:
-  soundcloud <link>
+${CYAN}BASIC USAGE:${NC}
+  ${GREEN}soundcloud <link>${NC}
 
-  # Download any song or playlist (auto-detects which)
+${CYAN}QUICK EXAMPLES:${NC}
+  ${YELLOW}# Download any song (saves to ~/Music/Soundcloud)${NC}
   soundcloud https://soundcloud.com/skrillex/bangarang
-  soundcloud https://soundcloud.com/artist/sets/playlist-name
 
-Your music saves to: ~/Music/Soundcloud
+  ${YELLOW}# Download a full playlist or album${NC}
+  soundcloud https://soundcloud.com/user/sets/playlist-name
 
-OPTIONS WITH EXAMPLES:
+  ${YELLOW}# Download all tracks from an artist${NC}
+  soundcloud https://soundcloud.com/artist-name
 
-📁 Save to different locations:
+${CYAN}SAVE TO DIFFERENT LOCATIONS:${NC}
+  ${YELLOW}# Save to Desktop${NC}
   soundcloud -d ~/Desktop https://soundcloud.com/artist/song
-  soundcloud -d ~/Music/Electronic https://soundcloud.com/artist/playlist
 
-🔍 Get more info:
-  soundcloud -v https://soundcloud.com/artist/song         (show download details)
-  soundcloud --dry-run https://soundcloud.com/artist/song  (preview without downloading)
+  ${YELLOW}# Save to a specific music folder${NC}
+  soundcloud -d ~/Music/Electronic https://soundcloud.com/artist/song
 
-💡 Combine options:
-  soundcloud -d ~/Desktop -v https://soundcloud.com/artist/playlist
-  soundcloud -v --dry-run https://soundcloud.com/artist/sets/big-playlist
+${CYAN}QUALITY OPTIONS:${NC}
+  ${YELLOW}# Best quality (default - recommended)${NC}
+  soundcloud https://soundcloud.com/artist/song
 
-🚫 Skip features (faster downloads):
-  soundcloud --no-thumb https://soundcloud.com/artist/song  (no album art)
-  soundcloud --no-meta https://soundcloud.com/artist/song   (no song info)
+  ${YELLOW}# Good quality (smaller files)${NC}
+  soundcloud -q good https://soundcloud.com/artist/song
 
-TROUBLESHOOTING:
-  • Make sure the SoundCloud link is public
-  • Check your internet connection  
-  • Some tracks may not be downloadable
-  • Use -v for detailed error info
+  ${YELLOW}# Small files (lowest quality)${NC}
+  soundcloud -q small https://soundcloud.com/artist/song
+
+${CYAN}PREVIEW & TROUBLESHOOTING:${NC}
+  ${YELLOW}# See what would be downloaded (no actual download)${NC}
+  soundcloud --dry-run https://soundcloud.com/artist/song
+
+  ${YELLOW}# Get detailed information during download${NC}
+  soundcloud -v https://soundcloud.com/artist/song
+
+  ${YELLOW}# Combine preview with details${NC}
+  soundcloud -v --dry-run https://soundcloud.com/artist/sets/playlist
+
+${CYAN}ADVANCED OPTIONS:${NC}
+  ${YELLOW}# Skip album art (faster downloads)${NC}
+  soundcloud --no-thumb https://soundcloud.com/artist/song
+
+  ${YELLOW}# Skip metadata (artist, title info)${NC}
+  soundcloud --no-meta https://soundcloud.com/artist/song
+
+  ${YELLOW}# Combine options${NC}
+  soundcloud -d ~/Desktop -q good --no-thumb https://soundcloud.com/artist/song
+
+${CYAN}YOUR MUSIC:${NC}
+  ${GREEN}📁 Default location: ~/Music/Soundcloud${NC}
+  ${GREEN}📂 Organized as: Artist/Album/Song.m4a${NC}
+
+${CYAN}TROUBLESHOOTING:${NC}
+  ${RED}•${NC} ${YELLOW}Make sure the SoundCloud link is public${NC}
+  ${RED}•${NC} ${YELLOW}Check your internet connection${NC}
+  ${RED}•${NC} ${YELLOW}Some tracks may not be downloadable due to artist settings${NC}
+  ${RED}•${NC} ${YELLOW}Use ${GREEN}-v${NC} flag for detailed error information${NC}
+  ${RED}•${NC} ${YELLOW}Try ${GREEN}--dry-run${NC} first to see what's available${NC}
+
+${CYAN}EXAMPLES FOR YOUR FRIEND:${NC}
+  ${GREEN}soundcloud help${NC}                              ${BLUE}# Show this help${NC}
+  ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}  ${BLUE}# Download one song${NC}
+  ${GREEN}soundcloud https://soundcloud.com/user/sets/mix${NC} ${BLUE}# Download playlist${NC}
+  ${GREEN}soundcloud -d ~/Desktop <link>${NC}              ${BLUE}# Save to Desktop${NC}
+  ${GREEN}soundcloud --dry-run <link>${NC}                 ${BLUE}# Preview first${NC}
+
+${PURPLE}Happy downloading! 🎵${NC}
 
 EOF
 }
 
 # Check if yt-dlp is installed
 if ! command -v yt-dlp &> /dev/null; then
-    echo "❌ yt-dlp is not installed"
-    echo "💡 Install it with: brew install yt-dlp"
+    echo -e "${RED}❌ yt-dlp is not installed${NC}"
+    echo -e "${BLUE}💡 Run the installer again: ${GREEN}bash <(curl -fsSL https://raw.githubusercontent.com/maxpeterson96/soundcloud-dl/main/install.sh)${NC}"
     exit 1
 fi
 
@@ -60,16 +107,19 @@ VERBOSE=""
 
 # No arguments
 if [[ $# -eq 0 ]]; then
-    echo "🎵 SoundCloud Downloader"
-    echo "Usage: soundcloud <SoundCloud-link>"
+    echo -e "${BLUE}🎵 SoundCloud Downloader${NC}"
+    echo -e "${YELLOW}Usage: ${GREEN}soundcloud <SoundCloud-link>${NC}"
     echo ""
-    echo "Example: soundcloud https://soundcloud.com/artist/song"
-    echo "For help: soundcloud help"
+    echo -e "${CYAN}Examples:${NC}"
+    echo -e "  ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
+    echo -e "  ${GREEN}soundcloud https://soundcloud.com/user/sets/playlist${NC}"
+    echo ""
+    echo -e "${BLUE}For detailed help: ${GREEN}soundcloud help${NC}"
     exit 1
 fi
 
 # Handle help command
-if [[ "$1" == "help" ]]; then
+if [[ "$1" == "help" ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
     show_help
     exit 0
 fi
@@ -83,7 +133,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         -d|--dest)
             if [[ -z "$2" ]]; then
-                echo "❌ --dest needs a folder path"
+                echo -e "${RED}❌ --dest needs a folder path${NC}"
+                echo -e "${BLUE}💡 Example: ${GREEN}soundcloud -d ~/Desktop <link>${NC}"
                 exit 1
             fi
             DEST="$2"
@@ -91,7 +142,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         -q|--quality)
             if [[ -z "$2" ]]; then
-                echo "❌ --quality needs a level (best, good, or small)"
+                echo -e "${RED}❌ --quality needs a level${NC}"
+                echo -e "${BLUE}💡 Options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
                 exit 1
             fi
             case "$2" in
@@ -105,8 +157,8 @@ while [[ $# -gt 0 ]]; do
                     FORMAT='bestaudio[ext=mp3]/bestaudio[abr<=128]/bestaudio'
                     ;;
                 *)
-                    echo "❌ Invalid quality: $2"
-                    echo "💡 Use: best, good, or small"
+                    echo -e "${RED}❌ Invalid quality: $2${NC}"
+                    echo -e "${BLUE}💡 Valid options: ${GREEN}best${NC}, ${GREEN}good${NC}, or ${GREEN}small${NC}"
                     exit 1
                     ;;
             esac
@@ -129,8 +181,8 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -*)
-            echo "❌ Unknown option: $1"
-            echo "💡 Type 'soundcloud help' for options"
+            echo -e "${RED}❌ Unknown option: $1${NC}"
+            echo -e "${BLUE}💡 Type ${GREEN}'soundcloud help'${NC} for available options"
             exit 1
             ;;
         *)
@@ -143,15 +195,17 @@ done
 
 # Check for URL
 if [[ -z "$URL" ]]; then
-    echo "❌ No link provided"
-    echo "💡 Usage: soundcloud <SoundCloud-link>"
+    echo -e "${RED}❌ No SoundCloud link provided${NC}"
+    echo -e "${BLUE}💡 Usage: ${GREEN}soundcloud <SoundCloud-link>${NC}"
+    echo -e "${BLUE}💡 Example: ${GREEN}soundcloud https://soundcloud.com/artist/song${NC}"
     exit 1
 fi
 
 # Validate it's a SoundCloud URL
 if [[ ! "$URL" =~ soundcloud\.com ]]; then
-    echo "❌ That doesn't look like a SoundCloud link"
-    echo "💡 Make sure it looks like: https://soundcloud.com/artist/track"
+    echo -e "${RED}❌ That doesn't look like a SoundCloud link${NC}"
+    echo -e "${BLUE}💡 Make sure it looks like: ${GREEN}https://soundcloud.com/artist/track${NC}"
+    echo -e "${BLUE}💡 Links should start with: ${GREEN}https://soundcloud.com/${NC}"
     exit 1
 fi
 
@@ -160,13 +214,22 @@ DEST="${DEST/#\~/$HOME}"
 
 # Create destination folder
 if ! mkdir -p "$DEST"; then
-    echo "❌ Can't create folder: $DEST"
+    echo -e "${RED}❌ Can't create folder: $DEST${NC}"
+    echo -e "${BLUE}💡 Check folder permissions or try a different location${NC}"
     exit 1
 fi
 
-echo "🎵 Downloading music..."
-echo "📍 From: $URL"
-echo "💾 Saving to: $DEST"
+echo -e "${BLUE}🎵 SoundCloud Downloader${NC}"
+echo -e "${BLUE}=========================${NC}"
+echo -e "${CYAN}📍 Source: ${GREEN}$URL${NC}"
+echo -e "${CYAN}💾 Destination: ${GREEN}$DEST${NC}"
+
+# Show what we're about to do
+if [[ -n "$DRY_RUN" ]]; then
+    echo -e "${YELLOW}🔍 Preview mode - no files will be downloaded${NC}"
+else
+    echo -e "${GREEN}⬇️  Starting download...${NC}"
+fi
 
 # Build command - auto-detect playlist vs single with --yes-playlist
 cmd=(yt-dlp)
@@ -181,13 +244,33 @@ cmd+=(--no-overwrites)      # Don't re-download existing files
 cmd+=(-o "$DEST/$OUTPUT_TPL")
 cmd+=("$URL")
 
+# Show command in verbose mode
+if [[ -n "$VERBOSE" ]]; then
+    echo -e "${BLUE}💡 Running command: ${CYAN}${cmd[*]}${NC}"
+    echo ""
+fi
+
 # Download
 if "${cmd[@]}"; then
-    echo "✅ Download complete!"
-    echo "📂 Your music is in: $DEST"
-    echo "💡 Run the same command again to get any new tracks"
+    if [[ -n "$DRY_RUN" ]]; then
+        echo ""
+        echo -e "${GREEN}✅ Preview complete!${NC}"
+        echo -e "${BLUE}💡 Run without ${GREEN}--dry-run${NC} to actually download${NC}"
+    else
+        echo ""
+        echo -e "${GREEN}✅ Download complete!${NC}"
+        echo -e "${CYAN}📂 Your music is in: ${GREEN}$DEST${NC}"
+        echo -e "${BLUE}💡 Run the same command again to get any new tracks${NC}"
+    fi
 else
-    echo "❌ Download failed"
-    echo "💡 Try: soundcloud -v <your-link> for more details"
+    echo ""
+    echo -e "${RED}❌ Download failed${NC}"
+    echo ""
+    echo -e "${YELLOW}🔧 Troubleshooting tips:${NC}"
+    echo -e "${BLUE}• Make sure the SoundCloud link is public${NC}"
+    echo -e "${BLUE}• Check your internet connection${NC}"
+    echo -e "${BLUE}• Some tracks may not be downloadable${NC}"
+    echo -e "${BLUE}• Try: ${GREEN}soundcloud -v <your-link>${NC} for detailed output${NC}"
+    echo -e "${BLUE}• Try: ${GREEN}soundcloud --dry-run <your-link>${NC} to preview first${NC}"
     exit 1
 fi
